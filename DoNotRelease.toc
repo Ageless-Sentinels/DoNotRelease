@@ -1,0 +1,9 @@
+## Interface: 70300
+## Author: Siku @ Sentinels US
+## Version: 0.2
+
+## Title: Do Not Release
+## Notes: Prevent "accidentally" pressing the Release Spirit button.
+
+embeds.xml
+DoNotRelease.lua
