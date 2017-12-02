@@ -1,8 +1,6 @@
 local addonName = ...
 local addon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceComm-3.0", "AceHook-3.0", "AceConsole-3.0")
 
---adding a comment line to test discord webhooks
-
 -- Constants
 local ONLY_SHOW_STATUS_WHEN_ACTIVE = false
 local DNR_CHECK_DELAY = 5 -- Amount of seconds to wait for replies. 
