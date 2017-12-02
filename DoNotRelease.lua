@@ -96,7 +96,8 @@ function addon:OnEnable()
     self:SecureHook("UseSoulstone", ResetDNR)
     
     if IsInRaid() then
-        self:SendCommMessage("DNR_Toggle", "request", "WHISPER", GetRaidRosterInfo(1))
+        local raidLead = GetRaidRosterInfo(1)
+        self:SendCommMessage("DNR_Toggle", "request", "WHISPER", raidLead)
     end
 end
 
