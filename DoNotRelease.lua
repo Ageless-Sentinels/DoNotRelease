@@ -1,6 +1,8 @@
 local addonName = ...
 local addon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceComm-3.0", "AceHook-3.0", "AceConsole-3.0")
 
+local DNR_CHECK_DELAY = 5 -- Amount of seconds to wait for replies. 
+
 local isDNRActive = false
 local raidList = {}
 
@@ -82,7 +84,7 @@ function addon:ChatCommand(input)
                     raidList[name] = false
                 end
                 self:SendCommMessage("DNR_Check", "check", "RAID")
-                C_Timer.After(5, addon.CheckRaidList)
+                C_Timer.After(DNR_CHECK_DELAY, addon.CheckRaidList)
             elseif input == "reset" then
                 addon:BroadcastDNR(false)
             else
