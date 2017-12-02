@@ -103,9 +103,22 @@ function addon:OnEnable()
     self:SecureHook("RepopMe", ResetDNR)
     self:SecureHook("UseSoulstone", ResetDNR)
     
-    if IsInRaid() then
-        local raidLead = GetRaidRosterInfo(1)
-        self:SendCommMessage("DNR_Toggle", "request", "WHISPER", raidLead)
+    --If you disconnect or reload UI during an encounter, make sure to get an status update from the raid leader.
+    local isInstance, instanceType = IsInInstance()
+    if IsInRaid() and instanceType == "raid" then
+        -- Make sure to not request a status update from yourself, fetch it from a raid assist
+        if UnitIsGroupLeader("player") then
+            for i = 2, GetNumGroupMembers() do
+                local name, rank = GetRaidRosterInfo(i)
+                if rank == 1 then
+                    self:SendCommMessage("DNR_Toggle", "request", "WHISPER", name)
+                    break
+                end
+            end
+        else
+            local raidLead = GetRaidRosterInfo(1)
+            self:SendCommMessage("DNR_Toggle", "request", "WHISPER", raidLead)
+        end
     end
 end
 
