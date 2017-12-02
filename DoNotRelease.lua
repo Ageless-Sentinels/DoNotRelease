@@ -21,6 +21,8 @@ local function ToggleDNR(prefix, text)
     addon:Print("DNR Status:", isDNRActive)
 end
 
+-- Function will send a DNR value to everyone in the raid.
+-- state (bool) - the value to be sent.
 function addon:BroadcastDNR(state)
     if state then
         self:SendCommMessage("DNR_Toggle", "active", "RAID")
@@ -29,16 +31,18 @@ function addon:BroadcastDNR(state)
     end
 end
 
+-- This handles the communication over DNR_Check
 function addon:DNRComms(prefix, text, dist, from)
     local version = GetAddOnMetadata(addonName, "Version")
     addon:Print(prefix, text, dist, from)
     if text == "check" then
-        if not from then addon:Printf("Error: Target is not valid") end
+        if not from then addon:Printf("Error: Target is not valid") end -- This line should never be hit
         addon:Printf("Received Check Request From %s, Sending back whisper with version %s", from, version)
         self:SendCommMessage("DNR_Check", version, "WHISPER", from)
     else
+        -- Strsub is used to get rid of the "1." from verison number. We're only interested in comparing version minors. 
         local minVer = strsub(text, 3)
-        if version > minVer then
+        if strsub(version, 3) > minVer then
             raidList[from] = minVer
         else
             raidList[from] = true
@@ -46,16 +50,18 @@ function addon:DNRComms(prefix, text, dist, from)
     end
 end
 
+-- This function is called shortly after calling for a DNR Check to display the results.
 function addon:CheckRaidList()
     local numWrongVer = 0
-    for k, v in pairs(raidList) do
-        if v == false then
-            addon:Print(k, "does not have DoNotRelease installed")
+    for name, result in pairs(raidList) do
+        -- If you never receive a whisper back, result will remain unchanged
+        if result == false then
+            addon:Print(name, "does not have DoNotRelease installed")
             numWrongVer = numWrongVer + 1
-        elseif v ~= true then
-            addon:Print(k, "is using old version:", v)
+        --If someone has an outdated version, result will have changed to their version.
+        elseif result ~= true then
+            addon:Print(name, "is using old version:", result)
         end
-        addon:Print(k, v)
     end
     if numWrongVer == 0 then
         addon:Print("Everyone is good to go.")
