@@ -2,6 +2,7 @@ local addonName = ...
 local addon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceComm-3.0", "AceHook-3.0", "AceConsole-3.0")
 
 -- Constants
+local ONLY_SHOW_STATUS_WHEN_ACTIVE = false
 local DNR_CHECK_DELAY = 5 -- Amount of seconds to wait for replies. 
 local DNR_STATUS_WIDTH = 150
 local DNR_STATUS_HEIGHT = 24
@@ -35,11 +36,30 @@ local function IsAddonActive()
     return false
 end
 
+-- Update the status frame whenever we toggle DNR
+local function UpdateDNRStatus()
+    if DNRStatusFrame then 
+        DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false")
+        -- Special setting that will make the frame show up when active
+        if ONLY_SHOW_STATUS_WHEN_ACTIVE then
+            if isDNRActive then 
+                DNRStatusFrame:Show()
+            else
+                DNRStatusFrame:Hide()
+            end
+        end
+    else
+        -- The setting would also make /dnr status do nothing appear to do nothing most of the time
+        -- so just make the frame when it turns active if it doesnt exists.
+        if ONLY_SHOW_STATUS_WHEN_ACTIVE and isDNRActive then
+            addon:ToggleStatusFrame()
+        end 
+    end
+end
+
 local function ResetDNR()
     isDNRActive = false
-    if DNRStatusFrame then 
-        DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false") 
-    end
+    UpdateDNRStatus()
 end
 
 local function ToggleDNR(prefix, text)
@@ -50,10 +70,7 @@ local function ToggleDNR(prefix, text)
     else
         isDNRActive = true
     end
-
-    if DNRStatusFrame then 
-        DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false") 
-    end
+    UpdateDNRStatus()
 end
 
 -- Function will send a DNR value to everyone in the raid.
@@ -123,7 +140,7 @@ function addon:ToggleStatusFrame()
         frame:SetPoint(DoNotReleaseDB.point, UIParent, DoNotReleaseDB.relativePoint, DoNotReleaseDB.x, DoNotReleaseDB.y)
         frame:Show()
 
-        frame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false")
+        UpdateDNRStatus()
         frame:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", DNR_STATUS_FONTSIZE, "OUTLINE")
 
         frame:SetScript("OnDragStart", function(self)
