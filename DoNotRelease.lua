@@ -1,10 +1,23 @@
 local addonName = ...
 local addon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceComm-3.0", "AceHook-3.0", "AceConsole-3.0")
 
+-- Constants
 local DNR_CHECK_DELAY = 5 -- Amount of seconds to wait for replies. 
+local DNR_DEBUG = false
 
 local isDNRActive = false
 local raidList = {}
+
+-- Returns true while in a raid group, inside a raid instance.
+local function IsAddonActive()
+    local isInstance, instanceType = IsInInstance()
+    if IsInRaid() and instanceType == "raid" then
+        return true
+    elseif DNR_DEBUG then
+        return true
+    end
+    return false
+end
 
 local function ResetDNR()
     isDNRActive = false
@@ -74,8 +87,13 @@ function addon:OnInitialize()
 	self:RegisterChatCommand("dnr", "ChatCommand")
 end
 
+-- Chat Command: /dnr
+-- Only works while in raid and inside a raid instance, for raid leader or assists. 
+-- /dnr       - will broadcast for the raid not to release.
+-- /dnr reset - will reset the DNR flag for everyone in the raid
+-- /dnr check - will initiate a check to see who in the raid has the addon.
 function addon:ChatCommand(input)
-    if IsInRaid() then
+    if IsAddonActive() then
         if UnitIsGroupLeader("player") or UnitIsRaidOfficer("player") then
             if input == "check" then
                 addon:Print("Checking Raid")
@@ -104,8 +122,7 @@ function addon:OnEnable()
     self:SecureHook("UseSoulstone", ResetDNR)
     
     --If you disconnect or reload UI during an encounter, make sure to get an status update from the raid leader.
-    local isInstance, instanceType = IsInInstance()
-    if IsInRaid() and instanceType == "raid" then
+    if IsAddonActive() then
         -- Make sure to not request a status update from yourself, fetch it from a raid assist
         if UnitIsGroupLeader("player") then
             for i = 2, GetNumGroupMembers() do
@@ -116,15 +133,15 @@ function addon:OnEnable()
                 end
             end
         else
-            local raidLead = GetRaidRosterInfo(1)
-            self:SendCommMessage("DNR_Toggle", "request", "WHISPER", raidLead)
+            -- First index of the Raid roster is always the raid leader. 
+            local name = GetRaidRosterInfo(1)
+            self:SendCommMessage("DNR_Toggle", "request", "WHISPER", name)
         end
     end
 end
 
 function addon:DialogOnUpdateHook(dialog)
-    local isInstance, instanceType = IsInInstance()
-    if IsInRaid() and instanceType == "raid" and isDNRActive then
+    if IsAddonActive() and isDNRActive then
         dialog.button1:Disable()
         dialog.text:SetText("DO NOT RELEASE! DO NOT RELEASE!")
     end
