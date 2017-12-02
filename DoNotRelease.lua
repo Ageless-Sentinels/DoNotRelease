@@ -3,10 +3,26 @@ local addon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceComm-3.0", "AceHoo
 
 -- Constants
 local DNR_CHECK_DELAY = 5 -- Amount of seconds to wait for replies. 
-local DNR_DEBUG = false
+local DNR_STATUS_WIDTH = 150
+local DNR_STATUS_HEIGHT = 24
+local DNR_STATUS_FONTSIZE = 13
+local DNR_DEBUG = true
 
+-- Local variables
 local isDNRActive = false
 local raidList = {}
+
+-- Cached globals
+local GetNumGroupMembers = GetNumGroupMembers
+local GetRaidRosterInfo = GetRaidRosterInfo
+local UnitIsGroupLeader = UnitIsGroupLeader
+local UnitIsRaidOfficer = UnitIsRaidOfficer
+local GetAddOnMetadata = GetAddOnMetadata
+local IsInInstance = IsInInstance
+local CreateFrame = CreateFrame
+local IsInRaid = IsInRaid
+local strsub = strsub
+local pairs = pairs
 
 -- Returns true while in a raid group, inside a raid instance.
 local function IsAddonActive()
@@ -24,11 +40,9 @@ local function ResetDNR()
     if DNRStatusFrame then 
         DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false") 
     end
-    addon:Print("DNR Reset:", isDNRActive)
 end
 
 local function ToggleDNR(prefix, text)
-    addon:Print(prefix, text)
     if text and text == "reset" then 
         ResetDNR()
     elseif text and text == "request" then
@@ -40,7 +54,6 @@ local function ToggleDNR(prefix, text)
     if DNRStatusFrame then 
         DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false") 
     end
-    addon:Print("DNR Status:", isDNRActive)
 end
 
 -- Function will send a DNR value to everyone in the raid.
@@ -56,10 +69,10 @@ end
 -- This handles the communication over DNR_Check
 function addon:DNRComms(prefix, text, dist, from)
     local version = GetAddOnMetadata(addonName, "Version")
-    addon:Print(prefix, text, dist, from)
+    --addon:Print(prefix, text, dist, from)
     if text == "check" then
         if not from then addon:Printf("Error: Target is not valid") end -- This line should never be hit
-        addon:Printf("Received Check Request From %s, Sending back whisper with version %s", from, version)
+        --addon:Printf("Received Check Request From %s, Sending back whisper with version %s", from, version)
         self:SendCommMessage("DNR_Check", version, "WHISPER", from)
     else
         -- Strsub is used to get rid of the "1." from verison number. We're only interested in comparing version minors. 
@@ -100,8 +113,8 @@ function addon:ToggleStatusFrame()
         })
         frame:SetBackdropColor(0,0,0,0.4)
         frame:SetBackdropBorderColor(0,0,0,0.8)
-        frame:SetWidth(150)
-        frame:SetHeight(24)
+        frame:SetWidth(DNR_STATUS_WIDTH)
+        frame:SetHeight(DNR_STATUS_HEIGHT)
         frame:SetFrameStrata("DIALOG")
         frame:EnableMouse(true)
         frame:SetMovable(true)
@@ -111,7 +124,7 @@ function addon:ToggleStatusFrame()
         frame:Show()
 
         frame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false")
-        frame:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
+        frame:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", DNR_STATUS_FONTSIZE, "OUTLINE")
 
         frame:SetScript("OnDragStart", function(self)
             if not DoNotReleaseDB.lock then
@@ -137,7 +150,7 @@ function addon:ToggleStatusFrame()
 end
 
 function addon:OnInitialize()
-	self:RegisterChatCommand("dnr", "ChatCommand")
+    self:RegisterChatCommand("dnr", "ChatCommand")
     
     -- Initialize SavedVariable, if we start having customization options, we'll switch to AceDB
     -- This is just so we don't have to drag the frame where we want every time. 
@@ -159,7 +172,6 @@ function addon:ChatCommand(input)
         elseif input == "lock" then DoNotReleaseDB.lock = not DoNotReleaseDB
         elseif UnitIsGroupLeader("player") or UnitIsRaidOfficer("player") then
             if input == "check" then
-                addon:Print("Checking Raid")
                 for i = 1, GetNumGroupMembers() do
                     local name = GetRaidRosterInfo(i)
                     raidList[name] = false
