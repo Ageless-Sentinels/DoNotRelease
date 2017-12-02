@@ -21,6 +21,9 @@ end
 
 local function ResetDNR()
     isDNRActive = false
+    if DNRStatusFrame then 
+        DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false") 
+    end
     addon:Print("DNR Reset:", isDNRActive)
 end
 
@@ -32,6 +35,10 @@ local function ToggleDNR(prefix, text)
         addon:BroadcastDNR(isDNRActive)
     else
         isDNRActive = true
+    end
+
+    if DNRStatusFrame then 
+        DNRStatusFrame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false") 
     end
     addon:Print("DNR Status:", isDNRActive)
 end
@@ -83,18 +90,74 @@ function addon:CheckRaidList()
     end
 end
 
+function addon:ToggleStatusFrame()
+    if not DNRStatusFrame then
+        local frame = CreateFrame("Button", "DNRStatusFrame", UIParent)
+        frame:SetBackdrop({
+                bgFile = "Interface/Tooltips/UI-Tooltip-Background", 
+                tile = 0, tileSize = 0, edgeSize = 3, 
+                insets = { left = 2, right = 2, top = 2, bottom = 2 }
+        })
+        frame:SetBackdropColor(0,0,0,0.4)
+        frame:SetBackdropBorderColor(0,0,0,0.8)
+        frame:SetWidth(150)
+        frame:SetHeight(24)
+        frame:SetFrameStrata("DIALOG")
+        frame:EnableMouse(true)
+        frame:SetMovable(true)
+        frame:RegisterForDrag("LeftButton")
+        
+        frame:SetPoint(DoNotReleaseDB.point, UIParent, DoNotReleaseDB.relativePoint, DoNotReleaseDB.x, DoNotReleaseDB.y)
+        frame:Show()
+
+        frame:SetFormattedText("DNR Status: %s", isDNRActive and "true" or "false")
+        frame:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
+
+        frame:SetScript("OnDragStart", function(self)
+            if not DoNotReleaseDB.lock then
+                self:StartMoving()
+            end
+        end)
+        frame:SetScript("OnDragStop", function(self)
+            self:StopMovingOrSizing()
+            point, _, relativePoint, x, y = self:GetPoint(1)
+            DoNotReleaseDB.point = point
+            DoNotReleaseDB.relativePoint = relativePoint
+            DoNotReleaseDB.x = x
+            DoNotReleaseDB.y = y
+        end)
+
+    else
+        if DNRStatusFrame:IsShown() then
+            DNRStatusFrame:Hide()
+        else
+            DNRStatusFrame:Show()
+        end
+    end
+end
+
 function addon:OnInitialize()
 	self:RegisterChatCommand("dnr", "ChatCommand")
+    
+    -- Initialize SavedVariable, if we start having customization options, we'll switch to AceDB
+    -- This is just so we don't have to drag the frame where we want every time. 
+    if DoNotReleaseDB == nil then
+        DoNotReleaseDB = { x = 0, y = 0, point = "CENTER", relativePoint = "CENTER", lock = false }
+    end
 end
 
 -- Chat Command: /dnr
 -- Only works while in raid and inside a raid instance, for raid leader or assists. 
--- /dnr       - will broadcast for the raid not to release.
--- /dnr reset - will reset the DNR flag for everyone in the raid
--- /dnr check - will initiate a check to see who in the raid has the addon.
+-- /dnr        - will broadcast for the raid not to release.
+-- /dnr reset  - will reset the DNR flag for everyone in the raid
+-- /dnr check  - will initiate a check to see who in the raid has the addon.
+-- /dnr status - will show a little frame with the current DNR status. (Does not requires raid lead/assist)
+-- /dnr lock   - will lock the frame in place.
 function addon:ChatCommand(input)
     if IsAddonActive() then
-        if UnitIsGroupLeader("player") or UnitIsRaidOfficer("player") then
+        if input == "status" then addon:ToggleStatusFrame()
+        elseif input == "lock" then DoNotReleaseDB.lock = not DoNotReleaseDB
+        elseif UnitIsGroupLeader("player") or UnitIsRaidOfficer("player") then
             if input == "check" then
                 addon:Print("Checking Raid")
                 for i = 1, GetNumGroupMembers() do
@@ -122,7 +185,7 @@ function addon:OnEnable()
     self:SecureHook("UseSoulstone", ResetDNR)
     
     --If you disconnect or reload UI during an encounter, make sure to get an status update from the raid leader.
-    if IsAddonActive() then
+    if IsAddonActive() and IsInRaid() then
         -- Make sure to not request a status update from yourself, fetch it from a raid assist
         if UnitIsGroupLeader("player") then
             for i = 2, GetNumGroupMembers() do

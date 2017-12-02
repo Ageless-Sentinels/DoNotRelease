@@ -1,6 +1,7 @@
 ## Interface: 70300
 ## Author: Siku @ Sentinels US
-## Version: 0.2
+## Version: 0.3
+## SavedVariables: DoNotReleaseDB
 
 ## Title: Do Not Release
 ## Notes: Prevent "accidentally" pressing the Release Spirit button.
