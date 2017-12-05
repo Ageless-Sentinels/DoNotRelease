@@ -115,6 +115,7 @@ function addon:CheckRaidList()
         --If someone has an outdated version, result will have changed to their version.
         elseif result ~= true then
             addon:Print(name, "is using old version:", result)
+            numWrongVer = numWrongVer + 1
         end
     end
     if numWrongVer == 0 then
@@ -191,6 +192,7 @@ function addon:ChatCommand(input)
         elseif input == "lock" then DoNotReleaseDB.lock = not DoNotReleaseDB
         elseif UnitIsGroupLeader("player") or UnitIsRaidOfficer("player") then
             if input == "check" then
+                addon:Print("Checking Raid")
                 for i = 1, GetNumGroupMembers() do
                     local name = GetRaidRosterInfo(i)
                     raidList[name] = false
@@ -214,6 +216,7 @@ function addon:OnEnable()
     -- Make sure it doesn't stay on across attempts or when inappropriate
     self:SecureHook("RepopMe", ResetDNR)
     self:SecureHook("UseSoulstone", ResetDNR)
+    self:SecureHook("AcceptResurrect", ResetDNR)
     
     --If you disconnect or reload UI during an encounter, make sure to get an status update from the raid leader.
     if IsAddonActive() and IsInRaid() then
