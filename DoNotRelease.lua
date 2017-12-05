@@ -22,7 +22,7 @@ local GetAddOnMetadata = GetAddOnMetadata
 local IsInInstance = IsInInstance
 local CreateFrame = CreateFrame
 local IsInRaid = IsInRaid
-local strsub = strsub
+local strsplit = strsplit
 local pairs = pairs
 
 -- Returns true while in a raid group, inside a raid instance.
@@ -92,10 +92,13 @@ function addon:DNRComms(prefix, text, dist, from)
         --addon:Printf("Received Check Request From %s, Sending back whisper with version %s", from, version)
         self:SendCommMessage("DNR_Check", version, "WHISPER", from)
     else
-        -- Strsub is used to get rid of the "1." from verison number. We're only interested in comparing version minors. 
-        local minVer = strsub(text, 3)
-        if strsub(version, 3) > minVer then
-            raidList[from] = minVer
+        -- Compare versions, text contains theirs. 
+        local theirMajor, theirMinor = strsplit(".",text)
+        local yourMajor, yourMinor = strsplit(".", version)
+        if yourMajor > theirMajor then
+            raidList[from] = text
+        elseif yourMajor == theirMajor and yourMinor > theirMinor then
+            raidList[from] = text
         else
             raidList[from] = true
         end
