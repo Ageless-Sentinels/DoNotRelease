@@ -1,15 +1,13 @@
 local addonName = ...
 local addon = LibStub("AceAddon-3.0"):NewAddon(addonName, "AceComm-3.0", "AceHook-3.0", "AceConsole-3.0")
 
---testing webhook
-
 -- Constants
 local ONLY_SHOW_STATUS_WHEN_ACTIVE = false
 local DNR_CHECK_DELAY = 5 -- Amount of seconds to wait for replies. 
 local DNR_STATUS_WIDTH = 150
 local DNR_STATUS_HEIGHT = 24
 local DNR_STATUS_FONTSIZE = 13
-local DNR_DEBUG = true
+local DNR_DEBUG = false
 
 -- Local variables
 local isDNRActive = false

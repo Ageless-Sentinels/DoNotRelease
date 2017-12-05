@@ -1,6 +1,6 @@
 ## Interface: 70300
 ## Author: Siku @ Sentinels US
-## Version: 0.3
+## Version: 1.0
 ## SavedVariables: DoNotReleaseDB
 
 ## Title: Do Not Release
